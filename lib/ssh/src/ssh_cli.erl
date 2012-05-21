@@ -162,6 +162,10 @@ handle_msg({ssh_channel_up, ChannelId, ConnectionManager},
 		  cm = ConnectionManager} = State) ->
     {ok,  State};
 
+handle_msg({Group, tty_geometry}, #state{group = Group, pty = Pty} = State) ->
+    #ssh_pty{width=W, height=H} = Pty,
+    Group ! {self(), tty_geometry, {W, H}},
+    {ok, State};
 handle_msg({Group, Req}, #state{group = Group, buf = Buf, pty = Pty,
 				 cm = ConnectionManager,
 				 channel = ChannelId} = State) ->
@@ -243,9 +247,6 @@ io_request({get_geometry,rows},Buf,Tty) ->
     {ok, Tty#ssh_pty.height, Buf};
 io_request({requests,Rs}, Buf, Tty) ->
     io_requests(Rs, Buf, Tty, []);
-io_request(tty_geometry, Buf, Tty) ->
-    io_requests([{move_rel, 0}, {put_chars, unicode, [10]}], Buf, Tty, []);
-     %{[], Buf};
 io_request(_R, Buf, _Tty) ->
     {[], Buf}.
 
